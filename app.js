@@ -6,14 +6,15 @@ const members = document.getElementById("members");
 const groupsSelect = document.getElementById("groups");
 
 const amount = document.getElementById("amount");
-
 const balancesDiv = document.getElementById("balances");
 
 const API = "https://spliit-backend.onrender.com";
+
 let token = "";
 let currentGroup = null;
 
-// AUTH
+// ================= AUTH =================
+
 async function register() {
   await fetch(API + "/register", {
     method: "POST",
@@ -37,6 +38,7 @@ async function login() {
   });
 
   const data = await res.json();
+  console.log(data);
 
   if (data.error) return alert(data.error);
 
@@ -45,7 +47,8 @@ async function login() {
   loadGroups();
 }
 
-// GROUPS
+// ================= GROUPS =================
+
 async function loadGroups() {
   const res = await fetch(API + "/groups", {
     headers: { Authorization: token }
@@ -75,19 +78,28 @@ async function createGroup() {
   loadGroups();
 }
 
-// LOAD GROUP
+// ================= LOAD GROUP =================
+
 async function loadGroup() {
   const res = await fetch(API + "/group/" + groupsSelect.value, {
     headers: { Authorization: token }
   });
 
-  currentGroup = await res.json();
+  const data = await res.json();
+
+  if (data.error) {
+    alert(data.error);
+    return;
+  }
+
+  currentGroup = data;
 
   populateUsers();
   calculate();
 }
 
-// POPULATE USERS
+// ================= POPULATE USERS =================
+
 function populateUsers() {
   const paidBySelect = document.getElementById("paidBy");
   const splitDiv = document.getElementById("splitUsers");
@@ -107,15 +119,35 @@ function populateUsers() {
   });
 }
 
-// ADD EXPENSE
+// ================= ADD EXPENSE =================
+
 async function addExpense() {
-  if (!currentGroup) return alert("Load group first");
+
+  console.log("ADD CLICKED");   // 👈 ADD THIS LINE HERE
+
+  if (!currentGroup) {
+    alert("Load group first");
+    return;
+  }
+
+  if (!amount.value) {
+    alert("Enter amount");
+    return;
+  }
 
   const checked = document.querySelectorAll("#splitUsers input:checked");
   const splitNames = Array.from(checked).map(c => c.value);
 
+  console.log("Split names:", splitNames);  // 👈 ADD THIS ALSO
+
   const splitArr = splitNames.map(n => {
     const user = currentGroup.users.find(u => u.name === n);
+
+    if (!user) {
+      alert("User not found: " + n);
+      throw new Error("User missing");
+    }
+
     return {
       userId: user.id,
       share: Number(amount.value) / splitNames.length
@@ -141,8 +173,8 @@ async function addExpense() {
 
   loadGroup();
 }
+// ================= DELETE =================
 
-// DELETE EXPENSE
 async function deleteExpense(id) {
   await fetch(API + "/expense/" + id, {
     method: "DELETE",
@@ -152,7 +184,8 @@ async function deleteExpense(id) {
   loadGroup();
 }
 
-// CALCULATE
+// ================= CALCULATE =================
+
 function calculate() {
   const balances = {};
   currentGroup.group.members.forEach(m => balances[m] = 0);
@@ -175,7 +208,8 @@ function calculate() {
   showExpenses();
 }
 
-// WHO OWES
+// ================= WHO OWES =================
+
 function showOwes(balances) {
   const tbody = document.querySelector("#owesTable tbody");
   tbody.innerHTML = "";
@@ -209,7 +243,8 @@ function showOwes(balances) {
   });
 }
 
-// EXPENSE HISTORY
+// ================= EXPENSE LIST =================
+
 function showExpenses() {
   const div = document.getElementById("expensesList");
   div.innerHTML = "";
