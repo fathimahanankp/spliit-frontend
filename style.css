@@ -1,0 +1,145 @@
+body {
+  font-family: 'Segoe UI', sans-serif;
+  margin: 0;
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #333;
+  transition: 0.3s;
+}
+
+.dark-mode {
+  background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+  color: white;
+}
+
+.container {
+  max-width: 900px;
+  margin: auto;
+}
+
+/* Header */
+h1 {
+  text-align: center;
+  color: white;
+}
+
+/* Cards */
+.card {
+  background: white;
+  padding: 20px;
+  margin: 20px 0;
+  border-radius: 15px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+  transition: 0.3s;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+}
+
+.dark-mode .card {
+  background: #1e1e2f;
+}
+
+/* Inputs */
+.input-group {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+input {
+  padding: 12px;
+  flex: 1;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+/* Buttons */
+button {
+  padding: 12px 18px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(45deg, #ff6a00, #ee0979);
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+button:hover {
+  transform: scale(1.05);
+  opacity: 0.9;
+}
+
+.toggle-btn {
+  display: block;
+  margin: 10px auto;
+}
+
+/* Expense cards */
+#expensesList p {
+  background: #f1f1f1;
+  padding: 10px;
+  border-radius: 8px;
+  margin: 5px 0;
+}
+
+.dark-mode #expensesList p {
+  background: #2a2a3d;
+}
+
+/* Balances */
+#balances p {
+  font-weight: bold;
+  margin: 5px 0;
+}
+
+/* Table */
+#owesTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+#owesTable th {
+  background: linear-gradient(45deg, #36d1dc, #5b86e5);
+  color: white;
+}
+
+#owesTable td, #owesTable th {
+  padding: 10px;
+  text-align: center;
+}
+
+#owesTable tr:nth-child(even) {
+  background: #f2f2f2;
+}
+
+.dark-mode #owesTable tr:nth-child(even) {
+  background: #2a2a3d;
+}
+
+#owesTable tr:hover {
+  background: #ddd;
+}
+
+.dark-mode #owesTable tr:hover {
+  background: #3a3a5a;
+}
+
+/* Chart */
+canvas {
+  margin-top: 20px;
+}
+
+#splitUsers label {
+  display: inline-block;
+  margin: 5px 10px;
+  background: #eee;
+  padding: 5px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
