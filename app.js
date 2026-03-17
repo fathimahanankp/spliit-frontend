@@ -9,7 +9,7 @@ const amount = document.getElementById("amount");
 
 const balancesDiv = document.getElementById("balances");
 
-const API = "https://spliit-backend.onrender.com/";
+const API = "https://spliit-backend.onrender.com";
 let token = "";
 let currentGroup = null;
 
