@@ -12,6 +12,7 @@ const API = "https://spliit-backend.onrender.com";
 
 let token = "";
 let currentGroup = null;
+let currentUser = "";
 
 // ================= AUTH =================
 
@@ -38,11 +39,14 @@ async function login() {
   });
 
   const data = await res.json();
-  console.log(data);
 
   if (data.error) return alert(data.error);
 
   token = data.token;
+  currentUser = data.user.name;
+
+  document.getElementById("currentUser").innerText = currentUser;
+
   alert("Login success ✅");
   loadGroups();
 }
@@ -63,6 +67,10 @@ async function loadGroups() {
 }
 
 async function createGroup() {
+  if (!groupName.value || !members.value) {
+    return alert("Enter group name and members");
+  }
+
   await fetch(API + "/create-group", {
     method: "POST",
     headers: {
@@ -74,6 +82,9 @@ async function createGroup() {
       members: members.value.split(",").map(m => m.trim())
     })
   });
+
+  groupName.value = "";
+  members.value = "";
 
   loadGroups();
 }
@@ -87,10 +98,7 @@ async function loadGroup() {
 
   const data = await res.json();
 
-  if (data.error) {
-    alert(data.error);
-    return;
-  }
+  if (data.error) return alert(data.error);
 
   currentGroup = data;
 
@@ -101,15 +109,10 @@ async function loadGroup() {
 // ================= POPULATE USERS =================
 
 function populateUsers() {
-  const paidBySelect = document.getElementById("paidBy");
   const splitDiv = document.getElementById("splitUsers");
-
-  paidBySelect.innerHTML = "";
   splitDiv.innerHTML = "";
 
   currentGroup.group.members.forEach(name => {
-    paidBySelect.innerHTML += `<option value="${name}">${name}</option>`;
-
     splitDiv.innerHTML += `
       <label>
         <input type="checkbox" value="${name}" checked>
@@ -122,30 +125,27 @@ function populateUsers() {
 // ================= ADD EXPENSE =================
 
 async function addExpense() {
-
-  console.log("ADD CLICKED");   // 👈 ADD THIS LINE HERE
-
-  if (!currentGroup) {
-    alert("Load group first");
-    return;
-  }
-
-  if (!amount.value) {
-    alert("Enter amount");
-    return;
-  }
+  if (!currentGroup) return alert("Load group first");
+  if (!amount.value) return alert("Enter amount");
 
   const checked = document.querySelectorAll("#splitUsers input:checked");
   const splitNames = Array.from(checked).map(c => c.value);
 
-  console.log("Split names:", splitNames);  // 👈 ADD THIS ALSO
+  if (splitNames.length === 0) {
+    return alert("Select at least one person");
+  }
 
   const splitArr = splitNames.map(n => {
-    const user = currentGroup.users.find(u => u.name === n);
+    const cleanName = n.trim().toLowerCase();
+
+    const user = currentGroup.users.find(
+      u => u.name.trim().toLowerCase() === cleanName
+    );
 
     if (!user) {
-      alert("User not found: " + n);
-      throw new Error("User missing");
+      console.log("Available users:", currentGroup.users);
+      alert("❌ User not found: " + n);
+      throw new Error("User mapping failed");
     }
 
     return {
@@ -154,8 +154,13 @@ async function addExpense() {
     };
   });
 
-  const payerName = document.getElementById("paidBy").value;
-  const payer = currentGroup.users.find(u => u.name === payerName);
+  const payer = currentGroup.users.find(
+    u => u.name.trim().toLowerCase() === currentUser.trim().toLowerCase()
+  );
+
+  if (!payer) {
+    return alert("❌ Logged-in user not found in group");
+  }
 
   await fetch(API + "/add-expense", {
     method: "POST",
@@ -171,15 +176,7 @@ async function addExpense() {
     })
   });
 
-  loadGroup();
-}
-// ================= DELETE =================
-
-async function deleteExpense(id) {
-  await fetch(API + "/expense/" + id, {
-    method: "DELETE",
-    headers: { Authorization: token }
-  });
+  amount.value = "";
 
   loadGroup();
 }
@@ -202,7 +199,18 @@ function calculate() {
     });
   });
 
-  balancesDiv.innerHTML = `<pre>${JSON.stringify(balances, null, 2)}</pre>`;
+  balancesDiv.innerHTML = "";
+
+  for (let person in balances) {
+    const val = balances[person];
+    const color = val > 0 ? "green" : val < 0 ? "red" : "black";
+
+    balancesDiv.innerHTML += `
+      <p style="color:${color}">
+        ${person}: ₹${val.toFixed(2)}
+      </p>
+    `;
+  }
 
   showOwes(balances);
   showExpenses();
@@ -229,6 +237,12 @@ function showOwes(balances) {
 
         tbody.innerHTML += `
           <tr>
+            <td>
+              <input type="checkbox" class="settleCheck"
+                data-from="${d.name}"
+                data-to="${c.name}"
+                data-amount="${pay}">
+            </td>
             <td>${d.name}</td>
             <td>➡️</td>
             <td>${c.name}</td>
@@ -241,6 +255,54 @@ function showOwes(balances) {
       }
     });
   });
+}
+
+// ================= SETTLE SELECTED =================
+
+async function settleSelected() {
+  const checks = document.querySelectorAll(".settleCheck:checked");
+
+  if (checks.length === 0) {
+    return alert("Select at least one settlement");
+  }
+
+  for (let chk of checks) {
+    const from = chk.dataset.from;
+    const to = chk.dataset.to;
+    const amt = Number(chk.dataset.amount);
+
+    const payer = currentGroup.users.find(
+      u => u.name.trim().toLowerCase() === from.trim().toLowerCase()
+    );
+
+    const receiver = currentGroup.users.find(
+      u => u.name.trim().toLowerCase() === to.trim().toLowerCase()
+    );
+
+    if (!payer || !receiver) {
+      alert("User mapping failed in settlement");
+      continue;
+    }
+
+    await fetch(API + "/add-expense", {
+      method: "POST",
+      headers: {
+        "Content-Type":"application/json",
+        Authorization: token
+      },
+      body: JSON.stringify({
+        groupId: currentGroup.group.id,
+        amount: amt,
+        paidBy: payer.id,
+        split: [
+          { userId: receiver.id, share: amt }
+        ]
+      })
+    });
+  }
+
+  alert("Settled selected ✅");
+  loadGroup();
 }
 
 // ================= EXPENSE LIST =================
@@ -259,7 +321,6 @@ function showExpenses() {
     div.innerHTML += `
       <p>
         <b>${payer}</b> paid ₹${exp.amount} for ${names.join(", ")}
-        <button onclick="deleteExpense(${exp.id})">❌</button>
       </p>
     `;
   });
